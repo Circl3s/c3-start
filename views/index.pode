@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Start</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Raleway:wght@200;400&family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="flex">
+        <div class="container">
+            <h1>Welcome back, $($ENV:Username)</h1>
+            <div class="row">
+                <div class="card" style="color: #25B2BC; animation-delay: 0.1s;">
+                    $(
+                        $Now = Get-Date
+                        $DOW = $Now.DayOfWeek
+                        $Date = $Now.ToLongDateString()
+                        $Time = $Now.ToLongTimeString()
+                    )
+                    <p class="info" id="date">$DOW, $Date</p>
+                    <p class="info" id="time">$Time</p>
+                </div>
+                <div class="card clickable grow" id="cpu-card" style="color: #27D796; animation-delay: 0.2s;">
+                        <p class="info"><span id="cpu">0</span>% usage</p>
+                        <p class="info"><span id="processes">$((Get-Process).Length)</span> running</p>
+                </div>
+                <div class="card clickable grow" id="ram-card" style="color: #B877DB; animation-delay: 0.3s;">
+                    <p class="info"><span id="ram">0</span>GB free</p>
+                    <p class="info">out of $((Get-CimInstance Win32_PhysicalMemory | Measure-Object -Property capacity -Sum).sum /1gb)GB</p>
+                </div>
+            </div>
+            <div class="row">
+                <div class="card grow" style="color: #FAB795; animation-delay: 0.4s;">
+                    <p class="info">News</p>
+                    <ul id="news">
+                        
+                    </ul>
+                </div>
+                <div class="card shrink half" style="color: #6C6F93; animation-delay: 0.5s;">
+                    <div class="info" id="links">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+<script>
+    var process_elem = document.getElementById("processes"),
+        cpu_elem = document.getElementById("cpu"),
+        time_elem = document.getElementById("time"),
+        ram_elem = document.getElementById("ram"),
+        cpu_card = document.getElementById("cpu-card"),
+        ram_card = document.getElementById("ram-card"),
+        news_elem = document.getElementById("news"),
+        links_elem = document.getElementById("links");
+
+    function update_info() {
+        fetch("/info").then((response) => {
+            response.json().then((json) => {
+                process_elem.innerText = json["processes"];
+                cpu_elem.innerText = Math.round(json["cpu"]);
+                ram_elem.innerText = Math.round(json["ram"] / 1024 * 10) / 10;
+            });
+        });
+    }
+
+    function update_time() {
+        let time = (new Date).toLocaleTimeString();
+        time_elem.innerText = time;
+    }
+
+    function open_taskmgr() {
+        fetch("/launch/taskmgr.exe", {method: "POST"})
+    }
+
+    function load_bookmarks() {
+        fetch("/bookmarks.json").then((response) => {
+            response.json().then((bookmarks) => {
+                bookmarks.forEach(bookmark => {
+                    let link = document.createElement("a");
+                    link.href = bookmark["address"];
+                    link.innerText = bookmark["name"];
+                    link.style.setProperty("--link-color", bookmark["color"]);
+                    links_elem.appendChild(link);
+                });
+            });
+        });
+    }
+
+    async function load_news() {
+        fetch("https://hacker-news.firebaseio.com/v0/beststories.json").then((response) => {
+            response.json().then((news) => {
+                news = news.slice(0, 5);
+                console.log(news);
+                news.forEach((id) => {
+                    let link = document.createElement("a");
+                    let entry = link.appendChild(document.createElement("li"));
+                    fetch("https://hacker-news.firebaseio.com/v0/item/" + id + ".json").then((response) => {
+                        response.json().then((story) => {
+                            console.log(story);
+                            link.href = story["url"];
+                            entry.innerText = story["title"];
+                        });
+                    });
+                    news_elem.appendChild(link);
+                });
+            });
+        });
+    }
+
+    cpu_card.onclick = open_taskmgr;
+    ram_card.onclick = open_taskmgr;
+
+    load_bookmarks();
+    update_info();
+    load_news();
+    setInterval(() => update_time(), 1000);
+    setInterval(() => update_info(), 3000);
+</script>
+</html>
