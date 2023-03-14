@@ -14,7 +14,10 @@ Start-PodeServer {
         $CPU = $Counters.CounterSamples[0].CookedValue
         $RAM = $Counters.CounterSamples[1].CookedValue
         $Processes = (Get-Process).Length
-        Write-PodeJsonResponse -Value @{"processes" = $Processes; "cpu" = $CPU; "ram" = $RAM}
+        $Now = Get-Date
+        $DOW = $Now.DayOfWeek.ToString()
+        $Date = $Now.ToLongDateString()
+        Write-PodeJsonResponse -Value @{"processes" = $Processes; "cpu" = $CPU; "ram" = $RAM; "day" = $DOW; "date" = $Date}
     }
 
     Add-PodeRoute -Method POST,GET -Path "/launch/:path" -ScriptBlock {
