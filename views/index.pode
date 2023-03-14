@@ -38,11 +38,12 @@
                 <div class="card grow" style="color: #FAB795; animation-delay: 0.4s;">
                     <p class="info">News</p>
                     <ul id="news">
-                        
+                        <li>Loading...</li>
                     </ul>
                 </div>
                 <div class="card shrink half" style="color: #6C6F93; animation-delay: 0.5s;">
                     <div class="info" id="links">
+                        <p>Loading...</p>
                     </div>
                 </div>
             </div>
@@ -82,6 +83,7 @@
     }
 
     async function load_bookmarks() {
+        let links = [];
         fetch("/bookmarks.json").then((response) => {
             response.json().then((bookmarks) => {
                 bookmarks.forEach(bookmark => {
@@ -89,13 +91,20 @@
                     link.href = bookmark["address"];
                     link.innerText = bookmark["name"];
                     link.style.setProperty("--link-color", bookmark["color"]);
-                    links_elem.appendChild(link);
+                    links.push(link);
                 });
+                links_elem.innerHTML = "";
+                links_elem.append(...links);
+            }).catch((error) => {
+                links_elem.innerHTML = "<p>Bookmark file error.</p>";
             });
+        }).catch((error) => {
+            links_elem.innerHTML = "<p>Bookmark file missing.</p>";
         });
     }
 
     async function load_news() {
+        let links = [];
         fetch("https://hacker-news.firebaseio.com/v0/beststories.json").then((response) => {
             response.json().then((news) => {
                 news = news.slice(0, 5);
@@ -110,9 +119,15 @@
                             entry.innerText = story["title"];
                         });
                     });
-                    news_elem.appendChild(link);
+                    links.push(link);
                 });
+                news_elem.innerHTML = "";
+                news_elem.append(...links);
+            }).catch((error) => {
+                news_elem.innerHTML = "<li>Received malformed response from Hacker News.</li>";
             });
+        }).catch((error) => {
+            news_elem.innerHTML = "<li>Couldn't reach Hacker News.</li>";
         });
     }
 
